@@ -78,6 +78,19 @@ static ImageCache *instance;
 	if (image != nil) {
 		return image;
 	}
+	if ([name hasPrefix:@"data:"]) {
+		// data:image/png;base64,... — decode inline, skip cache
+		NSRange commaRange = [name rangeOfString:@","];
+		if (commaRange.location != NSNotFound) {
+			NSString *b64 = [name substringFromIndex:commaRange.location + 1];
+			NSData *data = [[NSData alloc] initWithBase64EncodedString:b64 options:0];
+			image = [[NSImage alloc] initWithData:data];
+		}
+		if (height > 0 && image != nil && image.size.height > height) {
+			image = [image imageWithHeight:height];
+		}
+		return image;
+	}
 	if ([name hasPrefix:@"http"]) {
 		image = [[NSImage alloc] initWithContentsOfURL:[NSURL URLWithString:name]];
 	} else {

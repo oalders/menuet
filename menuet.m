@@ -223,7 +223,12 @@ void setState(const char *jsonString) {
 		NSString *imageName = state[@"Image"];
 		NSImage *image = [NSImage imageFromName:imageName withHeight:22];
 		_statusItem.button.image = image;
-		_statusItem.button.image.template = true;
+		NSNumber *templateImage = state[@"TemplateImage"];
+		if (templateImage != nil) {
+			_statusItem.button.image.template = [templateImage boolValue];
+		} else {
+			_statusItem.button.image.template = true;
+		}
 		_statusItem.button.imagePosition = NSImageLeft;
 	});
 }

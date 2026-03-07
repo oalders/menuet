@@ -113,9 +113,10 @@ func (a *Application) HideStartup() {
 
 // MenuState represents the title and drop down,
 type MenuState struct {
-	Title    string
-	Image    string  `json:",omitempty"` // In Resources dir or URL, should have height 22
-	FontSize float64 `json:",omitempty"` // Default: 14
+	Title         string
+	Image         string  `json:",omitempty"` // In Resources dir or URL, should have height 22
+	FontSize      float64 `json:",omitempty"` // Default: 14
+	TemplateImage *bool   `json:",omitempty"` // Default: true. Set to false for color images.
 }
 
 func (a *Application) sendState(state *MenuState) {
