@@ -230,6 +230,20 @@ void setState(const char *jsonString) {
 			_statusItem.button.image.template = true;
 		}
 		_statusItem.button.imagePosition = NSImageLeft;
+		BOOL isDark = NO;
+		NSAppearance *appearance = _statusItem.button.effectiveAppearance;
+		if (appearance != nil) {
+			NSString *bestMatch = [appearance bestMatchFromAppearancesWithNames:@[
+				NSAppearanceNameAqua, NSAppearanceNameDarkAqua
+			]];
+			isDark = [bestMatch isEqualToString:NSAppearanceNameDarkAqua];
+		}
+		CGColorRef borderColor = isDark
+			? [[NSColor colorWithWhite:1.0 alpha:0.4] CGColor]
+			: [[NSColor colorWithWhite:0.0 alpha:0.4] CGColor];
+		_statusItem.button.layer.cornerRadius = 4.0;
+		_statusItem.button.layer.borderWidth = 1.0;
+		_statusItem.button.layer.borderColor = borderColor;
 	});
 }
 
@@ -252,9 +266,6 @@ void createAndRunApplication() {
         _rootMenu.root = true;
         [(NSButtonCell *)_statusItem.button.cell setHighlightsBy:NSNoCellMask];
         _statusItem.button.wantsLayer = YES;
-        _statusItem.button.layer.cornerRadius = 4.0;
-        _statusItem.button.layer.borderWidth = 1.0;
-        _statusItem.button.layer.borderColor = [[NSColor secondaryLabelColor] CGColor];
         if (hasStatusItemClickHandler()) {
                 // Left-click calls Go handler, right-click opens menu
                 _statusItem.button.target = d;
