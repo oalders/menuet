@@ -30,6 +30,11 @@ type Application struct {
 	// Children returns the top level children
 	Children func() []MenuItem
 
+	// StatusItemClicked is called when the user left-clicks the status item.
+	// If set, left-click triggers this callback and right-click opens the menu.
+	// If nil, left-click opens the menu (default behavior).
+	StatusItemClicked func()
+
 	// If Version and Repo are set, checks for updates every day
 	AutoUpdate struct {
 		Version string
@@ -108,8 +113,9 @@ func (a *Application) HideStartup() {
 
 // MenuState represents the title and drop down,
 type MenuState struct {
-	Title string
-	Image string // // In Resources dir or URL, should have height 22
+	Title    string
+	Image    string  `json:",omitempty"` // In Resources dir or URL, should have height 22
+	FontSize float64 `json:",omitempty"` // Default: 14
 }
 
 func (a *Application) sendState(state *MenuState) {
@@ -211,4 +217,16 @@ func shutdownWait() {
 		App().cancel()
 	}
 	App().wg.Wait()
+}
+
+//export hasStatusItemClickHandler
+func hasStatusItemClickHandler() bool {
+	return App().StatusItemClicked != nil
+}
+
+//export statusItemClicked
+func statusItemClicked() {
+	if App().StatusItemClicked != nil {
+		go App().StatusItemClicked()
+	}
 }

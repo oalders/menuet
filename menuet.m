@@ -11,8 +11,13 @@ bool hideStartup();
 bool runningAtStartup();
 void toggleStartup();
 void shutdownWait();
+bool hasStatusItemClickHandler();
+void statusItemClicked();
 
 NSStatusItem *_statusItem;
+
+@class MenuetMenu;
+MenuetMenu *_rootMenu;
 
 @interface MenuetMenu : NSMenu <NSMenuDelegate>
 
@@ -169,6 +174,9 @@ NSStatusItem *_statusItem;
 - (void)menuDidClose:(MenuetMenu *)menu {
 	self.open = NO;
 	menuClosed(self.unique.UTF8String);
+	if (self.root && hasStatusItemClickHandler()) {
+		_statusItem.menu = nil;
+	}
 }
 
 - (void)press:(id)sender {
@@ -189,6 +197,8 @@ NSStatusItem *_statusItem;
 
 @interface MenuetAppDelegate : NSObject <NSApplicationDelegate, NSMenuDelegate, NSUserNotificationCenterDelegate>
 
+- (void)statusItemClicked:(id)sender;
+
 @end
 
 void setState(const char *jsonString) {
@@ -198,11 +208,16 @@ void setState(const char *jsonString) {
 	                       options:0
 	                       error:nil];
 	dispatch_async(dispatch_get_main_queue(), ^{
+		CGFloat fontSize = 14;
+		NSNumber *fontSizeNum = state[@"FontSize"];
+		if (fontSizeNum != nil && [fontSizeNum floatValue] > 0) {
+			fontSize = [fontSizeNum floatValue];
+		}
 		_statusItem.button.attributedTitle = [[NSAttributedString alloc]
 		                                      initWithString:state[@"Title"]
 		                                      attributes:@{
 		                                              NSFontAttributeName :
-		                                              [NSFont monospacedDigitSystemFontOfSize:14
+		                                              [NSFont monospacedDigitSystemFontOfSize:fontSize
 		                                               weight:NSFontWeightRegular]
 		}];
 		NSString *imageName = state[@"Image"];
@@ -215,8 +230,7 @@ void setState(const char *jsonString) {
 
 void menuChanged() {
         dispatch_async(dispatch_get_main_queue(), ^{
-		MenuetMenu *menu = (MenuetMenu *)_statusItem.menu;
-		[menu refreshVisibleMenus];
+		[_rootMenu refreshVisibleMenus];
 	});
 }
 
@@ -229,13 +243,39 @@ void createAndRunApplication() {
         [a setActivationPolicy:NSApplicationActivationPolicyAccessory];
         _statusItem = [[NSStatusBar systemStatusBar]
                        statusItemWithLength:NSVariableStatusItemLength];
-        MenuetMenu *menu = [MenuetMenu new];
-        menu.root = true;
-        _statusItem.menu = menu;
+        _rootMenu = [MenuetMenu new];
+        _rootMenu.root = true;
+        [(NSButtonCell *)_statusItem.button.cell setHighlightsBy:NSNoCellMask];
+        _statusItem.button.wantsLayer = YES;
+        _statusItem.button.layer.cornerRadius = 4.0;
+        _statusItem.button.layer.borderWidth = 1.0;
+        _statusItem.button.layer.borderColor = [[NSColor secondaryLabelColor] CGColor];
+        if (hasStatusItemClickHandler()) {
+                // Left-click calls Go handler, right-click opens menu
+                _statusItem.button.target = d;
+                _statusItem.button.action = @selector(statusItemClicked:);
+                [_statusItem.button sendActionOn:NSEventMaskLeftMouseUp];
+        } else {
+                // Default: any click opens the menu
+                _statusItem.menu = _rootMenu;
+        }
         [a run];
 }
 
 @implementation MenuetAppDelegate
+
+- (void)statusItemClicked:(id)sender {
+        NSEvent *event = [NSApp currentEvent];
+        if (event.modifierFlags & NSEventModifierFlagOption) {
+                // Option+click: show the menu
+                _statusItem.menu = _rootMenu;
+                dispatch_async(dispatch_get_main_queue(), ^{
+                        [_statusItem.button performClick:nil];
+                });
+        } else {
+                statusItemClicked();
+        }
+}
 
 - (NSApplicationTerminateReply)applicationShouldTerminate:
         (NSApplication *)sender {
