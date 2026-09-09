@@ -25,7 +25,8 @@ type Alert struct {
 	MessageText     string
 	InformativeText string
 	Buttons         []string
-	Inputs          []string
+	Inputs          []string // Placeholder text for input fields
+	InputValues     []string // Pre-filled editable text for input fields
 }
 
 // AlertClicked represents a selected alert button

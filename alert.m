@@ -24,16 +24,25 @@ void showAlert(const char *jsonString) {
 		}
 		NSView *accessoryView;
 		NSArray *inputs = jsonDict[@"Inputs"];
+		NSArray *inputValues = jsonDict[@"InputValues"];
+		BOOL hasInputValues = ![inputValues isEqualTo:NSNull.null] && inputValues.count > 0;
 		BOOL hasInputs = ![inputs isEqualTo:NSNull.null] && inputs.count > 0;
-		if (hasInputs) {
+		int inputCount = hasInputValues ? (int)inputValues.count : (hasInputs ? (int)inputs.count : 0);
+		if (inputCount > 0) {
+		        hasInputs = YES;
 		        BOOL first = false;
-		        int y = 30 * inputs.count;
+		        int y = 30 * inputCount;
 		        accessoryView = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 200, y)];
-		        for (NSString *input in inputs) {
+		        for (int i = 0; i < inputCount; i++) {
 		                y -= 30;
 		                EditableNSTextField *textfield =
 					[[EditableNSTextField alloc] initWithFrame:NSMakeRect(0, y, 200, 25)];
-		                [textfield setPlaceholderString:input];
+		                if (hasInputValues && i < (int)inputValues.count) {
+		                        [textfield setStringValue:inputValues[i]];
+		                }
+		                if (![inputs isEqualTo:NSNull.null] && i < (int)inputs.count) {
+		                        [textfield setPlaceholderString:inputs[i]];
+		                }
 		                [accessoryView addSubview:textfield];
 		                if (!first) {
 		                        [alert.window setInitialFirstResponder:textfield];
