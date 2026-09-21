@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/caseymrm/menuet"
+	"github.com/oalders/menuet"
 )
 
 var alertsCatalog = []menuet.Alert{
