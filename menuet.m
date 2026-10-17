@@ -12,7 +12,10 @@ bool runningAtStartup();
 void toggleStartup();
 void shutdownWait();
 bool hasStatusItemClickHandler();
+bool hasStatusItemOptionClickHandler();
+bool hasAnyStatusItemClickHandler();
 void statusItemClicked();
+void statusItemOptionClicked();
 
 NSStatusItem *_statusItem;
 
@@ -174,7 +177,7 @@ MenuetMenu *_rootMenu;
 - (void)menuDidClose:(MenuetMenu *)menu {
 	self.open = NO;
 	menuClosed(self.unique.UTF8String);
-	if (self.root && hasStatusItemClickHandler()) {
+	if (self.root && hasAnyStatusItemClickHandler()) {
 		_statusItem.menu = nil;
 	}
 }
@@ -266,8 +269,9 @@ void createAndRunApplication() {
         _rootMenu.root = true;
         [(NSButtonCell *)_statusItem.button.cell setHighlightsBy:NSNoCellMask];
         _statusItem.button.wantsLayer = YES;
-        if (hasStatusItemClickHandler()) {
-                // Left-click calls Go handler, right-click opens menu
+        if (hasAnyStatusItemClickHandler()) {
+                // Left-click goes to statusItemClicked:, which calls the Go
+                // handler for that click or falls back to opening the menu
                 _statusItem.button.target = d;
                 _statusItem.button.action = @selector(statusItemClicked:);
                 [_statusItem.button sendActionOn:NSEventMaskLeftMouseUp];
@@ -283,14 +287,19 @@ void createAndRunApplication() {
 - (void)statusItemClicked:(id)sender {
         NSEvent *event = [NSApp currentEvent];
         if (event.modifierFlags & NSEventModifierFlagOption) {
-                // Option+click: show the menu
-                _statusItem.menu = _rootMenu;
-                dispatch_async(dispatch_get_main_queue(), ^{
-                        [_statusItem.button performClick:nil];
-                });
-        } else {
+                if (hasStatusItemOptionClickHandler()) {
+                        statusItemOptionClicked();
+                        return;
+                }
+        } else if (hasStatusItemClickHandler()) {
                 statusItemClicked();
+                return;
         }
+        // No handler for this click: show the menu
+        _statusItem.menu = _rootMenu;
+        dispatch_async(dispatch_get_main_queue(), ^{
+                [_statusItem.button performClick:nil];
+        });
 }
 
 - (NSApplicationTerminateReply)applicationShouldTerminate:

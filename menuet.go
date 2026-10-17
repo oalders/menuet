@@ -31,9 +31,16 @@ type Application struct {
 	Children func() []MenuItem
 
 	// StatusItemClicked is called when the user left-clicks the status item.
-	// If set, left-click triggers this callback and right-click opens the menu.
-	// If nil, left-click opens the menu (default behavior).
+	// If set, left-click triggers this callback and Option+click opens the
+	// menu (unless StatusItemOptionClicked is also set). If nil, left-click
+	// opens the menu (default behavior).
 	StatusItemClicked func()
+
+	// StatusItemOptionClicked is called when the user Option+left-clicks the
+	// status item, instead of opening the menu. Left with StatusItemClicked
+	// nil, plain left-click opens the menu, so the callback only fires on a
+	// deliberate Option+click.
+	StatusItemOptionClicked func()
 
 	// If Version and Repo are set, checks for updates every day
 	AutoUpdate struct {
@@ -223,6 +230,23 @@ func shutdownWait() {
 //export hasStatusItemClickHandler
 func hasStatusItemClickHandler() bool {
 	return App().StatusItemClicked != nil
+}
+
+//export hasStatusItemOptionClickHandler
+func hasStatusItemOptionClickHandler() bool {
+	return App().StatusItemOptionClicked != nil
+}
+
+//export hasAnyStatusItemClickHandler
+func hasAnyStatusItemClickHandler() bool {
+	return hasStatusItemClickHandler() || hasStatusItemOptionClickHandler()
+}
+
+//export statusItemOptionClicked
+func statusItemOptionClicked() {
+	if App().StatusItemOptionClicked != nil {
+		go App().StatusItemOptionClicked()
+	}
 }
 
 //export statusItemClicked
